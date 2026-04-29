@@ -60,7 +60,7 @@ You should see four sections:
 3. Treatment PLC chlorine setpoint zeroed
 4. Distribution PLC pressure max raised to disable relief
 
-## Seeded vulnerabilities (matches paper validation scenario)
+## Seeded vulnerabilities
 
 | # | Vuln | Implementation |
 |---|------|----------------|
@@ -72,3 +72,5 @@ You should see four sections:
 | 6 | Permissive firewall #2 | (Phase 4 - cross-zone bridge) |
 
 Phase 1 covers vulns 1-3. Phases 2-4 add 4-6.
+
+⚠️ Intentionally vulnerable. This testbed deliberately ships with weak credentials and insecure Modbus configuration. Do not deploy on any network reachable by untrusted hosts. Use an isolated VM or air-gapped host.
