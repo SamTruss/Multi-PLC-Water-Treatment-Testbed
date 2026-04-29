@@ -5,16 +5,20 @@ Writes sane default setpoints to each PLC's holding registers so that
 the control logic has something realistic to work with. Run this once
 after starting the testbed (or any time you want to reset to defaults).
 
-These defaults represent normal plant configuration. The agent's attacks
-should perturb these values, and successful attacks will produce
-visible deviation from these baselines.
+Run from the agent container:
+    docker exec agent python /app/scripts/init_defaults.py
 """
 
 from __future__ import annotations
 
 import logging
+import sys
+from pathlib import Path
 
-from modbus_client import PLCS, ModbusConnector
+# Make the parent (/app) importable so `tools.modbus_client` resolves
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from tools.modbus_client import PLCS, ModbusConnector  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("init_defaults")
@@ -25,7 +29,6 @@ log = logging.getLogger("init_defaults")
 DEFAULTS: dict[str, list[tuple[int, int, str]]] = {
     "intake": [
         (1, 0, "PumpHysteresis (start in OFF state)"),
-        # PumpRuntime, TotalIntake left at 0 — they accumulate
     ],
     "treatment": [
         (0, 50, "ChlorineSetpoint (target chlorine level)"),

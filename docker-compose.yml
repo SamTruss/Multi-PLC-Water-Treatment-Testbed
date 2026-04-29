@@ -4,12 +4,13 @@ services:
     image: tuttas/openplc_v3:latest
     restart: unless-stopped
     ports:
-      - "8081:8080"   # web UI
-      - "5021:502"    # Modbus
+      - "8081:8080"
+      - "5021:502"
     volumes:
       - plc1-data:/root/OpenPLC_v3/webserver
     networks:
-      - ot-net
+      ot-net:
+        ipv4_address: 172.28.10.11
 
   plc2-treatment:
     container_name: plc2-treatment
@@ -21,7 +22,8 @@ services:
     volumes:
       - plc2-data:/root/OpenPLC_v3/webserver
     networks:
-      - ot-net
+      ot-net:
+        ipv4_address: 172.28.10.12
 
   plc3-distribution:
     container_name: plc3-distribution
@@ -33,7 +35,8 @@ services:
     volumes:
       - plc3-data:/root/OpenPLC_v3/webserver
     networks:
-      - ot-net
+      ot-net:
+        ipv4_address: 172.28.10.13
 
   agent:
     container_name: agent
@@ -41,8 +44,10 @@ services:
     working_dir: /app
     volumes:
       - ./agent:/app
+      - ./tests:/app/tests
     networks:
-      - ot-net
+      dmz-net:
+        ipv4_address: 172.28.20.10
     command: tail -f /dev/null
     depends_on:
       - plc1-intake
@@ -52,6 +57,14 @@ services:
 networks:
   ot-net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.10.0/24
+  dmz-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.20.0/24
 
 volumes:
   plc1-data:
