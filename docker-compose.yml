@@ -29,34 +29,42 @@ services:
       ot-net:
         ipv4_address: 172.28.10.13
 
-  scadalts-db:
-    container_name: scadalts-db
-    image: mysql/mysql-server:8.0.32
+  database:
+    container_name: database
+    # Switched from mysql/mysql-server (broken socket handling on Windows
+    # Docker Desktop) to the official mysql image, which Scada-LTS docs
+    # explicitly support.
+    image: mysql:8.0
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=root
-      - MYSQL_DATABASE=scadalts
-      - MYSQL_ROOT_HOST=%
-    command: --log_bin_trust_function_creators=1
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: scadalts
+      MYSQL_ROOT_HOST: "%"
+    command:
+      - --log_bin_trust_function_creators=1
+      - --default-authentication-plugin=mysql_native_password
     volumes:
       - scadalts-db-data:/var/lib/mysql
     networks:
       dmz-net:
         ipv4_address: 172.28.20.30
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
 
   scadalts:
     container_name: scadalts
-    # Pinned to a known-vulnerable build (CVE-2022-41976, CVSS 9.9)
-    # If this exact tag isn't on Docker Hub, fall back to :latest and
-    # we'll document the version that comes down.
     image: scadalts/scadalts:latest
     restart: unless-stopped
     environment:
       - CATALINA_OPTS=-Xmx1G -Xms1G
     ports: ["9090:8080"]
-    depends_on: [scadalts-db]
+    depends_on:
+      database:
+        condition: service_healthy
     networks:
       dmz-net:
         ipv4_address: 172.28.20.20
