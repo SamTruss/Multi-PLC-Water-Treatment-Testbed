@@ -3,11 +3,8 @@ services:
     container_name: plc1-intake
     image: tuttas/openplc_v3:latest
     restart: unless-stopped
-    ports:
-      - "8081:8080"
-      - "5021:502"
-    volumes:
-      - plc1-data:/root/OpenPLC_v3/webserver
+    ports: ["8081:8080", "5021:502"]
+    volumes: [plc1-data:/root/OpenPLC_v3/webserver]
     networks:
       ot-net:
         ipv4_address: 172.28.10.11
@@ -16,11 +13,8 @@ services:
     container_name: plc2-treatment
     image: tuttas/openplc_v3:latest
     restart: unless-stopped
-    ports:
-      - "8082:8080"
-      - "5022:502"
-    volumes:
-      - plc2-data:/root/OpenPLC_v3/webserver
+    ports: ["8082:8080", "5022:502"]
+    volumes: [plc2-data:/root/OpenPLC_v3/webserver]
     networks:
       ot-net:
         ipv4_address: 172.28.10.12
@@ -29,14 +23,45 @@ services:
     container_name: plc3-distribution
     image: tuttas/openplc_v3:latest
     restart: unless-stopped
-    ports:
-      - "8083:8080"
-      - "5023:502"
-    volumes:
-      - plc3-data:/root/OpenPLC_v3/webserver
+    ports: ["8083:8080", "5023:502"]
+    volumes: [plc3-data:/root/OpenPLC_v3/webserver]
     networks:
       ot-net:
         ipv4_address: 172.28.10.13
+
+  scadalts-db:
+    container_name: scadalts-db
+    image: mysql/mysql-server:8.0.32
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_DATABASE=scadalts
+      - MYSQL_ROOT_HOST=%
+    command: --log_bin_trust_function_creators=1
+    volumes:
+      - scadalts-db-data:/var/lib/mysql
+    networks:
+      dmz-net:
+        ipv4_address: 172.28.20.30
+
+  scadalts:
+    container_name: scadalts
+    # Pinned to a known-vulnerable build (CVE-2022-41976, CVSS 9.9)
+    # If this exact tag isn't on Docker Hub, fall back to :latest and
+    # we'll document the version that comes down.
+    image: scadalts/scadalts:latest
+    restart: unless-stopped
+    environment:
+      - CATALINA_OPTS=-Xmx1G -Xms1G
+    ports: ["9090:8080"]
+    depends_on: [scadalts-db]
+    networks:
+      dmz-net:
+        ipv4_address: 172.28.20.20
+      ot-net:
+        ipv4_address: 172.28.10.20
 
   agent:
     container_name: agent
@@ -49,24 +74,18 @@ services:
       dmz-net:
         ipv4_address: 172.28.20.10
     command: tail -f /dev/null
-    depends_on:
-      - plc1-intake
-      - plc2-treatment
-      - plc3-distribution
+    depends_on: [plc1-intake, plc2-treatment, plc3-distribution]
 
 networks:
   ot-net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.10.0/24
+    ipam: { config: [{ subnet: 172.28.10.0/24 }] }
   dmz-net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.20.0/24
+    ipam: { config: [{ subnet: 172.28.20.0/24 }] }
 
 volumes:
   plc1-data:
   plc2-data:
   plc3-data:
+  scadalts-db-data:
