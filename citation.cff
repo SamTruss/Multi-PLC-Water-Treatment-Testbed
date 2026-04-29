@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+title: "Multi-PLC Water Treatment Testbed"
+message: "If you use this testbed, please cite it as below."
+type: software
+authors:
+  - family-names: "Truss"
+    given-names: "Samuel Roy Anthony"
+    affiliation: "Keele University"
+    orcid: "https://orcid.org/0009-0006-4694-0606"  # replace with yours
+  - family-names: "Ghanem"
+    given-names: "Mohamed Chahine"
+    affiliation: "University of Liverpool"
+  - family-names: "Lacerda"
+    given-names: "Marcio"
+    affiliation: "London Metropolitan University"
+repository-code: "https://github.com/SamTruss/Multi-PLC-Water-Treatment-Testbed"
+url: "https://osf.io/d7p8j"
+license: Apache-2.0
+version: "0.1.0-phase1"
+date-released: "2026-04-29"
+keywords:
+  - ICS
+  - SCADA
+  - VAPT
+  - agentic AI
+  - critical infrastructure
+  - cyber security
