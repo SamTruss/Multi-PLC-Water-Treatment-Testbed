@@ -72,4 +72,6 @@ You should see four sections:
 
 Phase 1 covers vulns 1-3. Phases 2-4 add 4-6.
 
+Research use only. Not affiliated with any employer.
+
 ⚠️ Intentionally vulnerable. This testbed deliberately ships with weak credentials and insecure Modbus configuration. Do not deploy on any network reachable by untrusted hosts. Use an isolated VM or air-gapped host.
