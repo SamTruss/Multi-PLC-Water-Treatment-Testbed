@@ -16,9 +16,8 @@ All on Docker network `ot-net`. Within the network, agent reaches PLCs at
 `plc1-intake:502`, `plc2-treatment:502`, `plc3-distribution:502`.
 
 ## Folder layout
-
 ```
-testbed/
+.
 ├── docker-compose.yml
 ├── plc1_intake.st          <- upload to plc1-intake web UI
 ├── plc2_treatment.st       <- upload to plc2-treatment web UI
