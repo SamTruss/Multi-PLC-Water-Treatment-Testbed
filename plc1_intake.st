@@ -3,12 +3,10 @@ PROGRAM IntakeStation
     SourceLevel AT %MW10 : INT;
     IntakeFlow AT %MW11 : INT;
     EmergencyStop AT %MW12 : INT;
-
     IntakePump AT %QX0.0 : BOOL;
     IntakeValve AT %QX0.1 : BOOL;
     LowSourceAlarm AT %QX0.2 : BOOL;
     HighFlowAlarm AT %QX0.3 : BOOL;
-
     PumpRuntime AT %MW0 : INT;
     PumpHysteresis AT %MW1 : INT;
     TotalIntake AT %MW2 : INT;

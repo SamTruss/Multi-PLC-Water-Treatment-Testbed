@@ -3,14 +3,12 @@ PROGRAM TreatmentStation
     TreatmentTankLevel AT %MW10 : INT;
     ChlorineLevel AT %MW11 : INT;
     PhLevel AT %MW12 : INT;
-
     ChlorineDoser AT %QX0.0 : BOOL;
     AcidDoser AT %QX0.1 : BOOL;
     BaseDoser AT %QX0.2 : BOOL;
     Mixer AT %QX0.3 : BOOL;
     ContaminationAlarm AT %QX0.4 : BOOL;
     PhAlarm AT %QX0.5 : BOOL;
-
     ChlorineSetpoint AT %MW0 : INT;
     PhSetpointLow AT %MW1 : INT;
     PhSetpointHigh AT %MW2 : INT;

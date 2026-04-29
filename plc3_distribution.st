@@ -3,14 +3,12 @@ PROGRAM DistributionStation
     DistributionPressure AT %MW10 : INT;
     OutflowRate AT %MW11 : INT;
     ReservoirLevel AT %MW12 : INT;
-
     BoosterPump1 AT %QX0.0 : BOOL;
     BoosterPump2 AT %QX0.1 : BOOL;
     PressureReliefValve AT %QX0.2 : BOOL;
     SupplyValve AT %QX0.3 : BOOL;
     OverpressureAlarm AT %QX0.4 : BOOL;
     LowPressureAlarm AT %QX0.5 : BOOL;
-
     PressureSetpoint AT %MW0 : INT;
     PressureMax AT %MW1 : INT;
     DailyOutflow AT %MW2 : INT;
