@@ -1,4 +1,16 @@
-"""Process simulator - writes sensor values to holding registers (%MW10-12)."""
+"""
+Process simulator for the water treatment testbed.
+
+Runs in a loop, every second:
+  1. Reads each PLC's pump/valve/doser states
+  2. Updates a simulated physical model (tank levels, pressure, etc.)
+  3. Writes new sensor readings back to the PLCs' holding registers
+     (sensors live at %MW10-12 since %IW is read-only over Modbus)
+
+Run with:
+    docker exec -it agent python /app/scripts/process_simulator.py
+Stop with Ctrl+C.
+"""
 
 from __future__ import annotations
 
@@ -7,11 +19,15 @@ import signal
 import sys
 import time
 from dataclasses import dataclass
+from pathlib import Path
 
-from pymodbus.client import ModbusTcpClient
-from pymodbus.exceptions import ModbusException
+# Make the parent (/app) importable so `tools.modbus_client` resolves
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from modbus_client import PLCS
+from pymodbus.client import ModbusTcpClient  # noqa: E402
+from pymodbus.exceptions import ModbusException  # noqa: E402
+
+from tools.modbus_client import PLCS  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("process_sim")
@@ -119,16 +135,11 @@ def step(state: PlantState) -> PlantState:
 
 
 def push_to_plcs(state: PlantState) -> None:
-    # PLC1 sensors live at %MW10-12 (= holding regs 10-12)
     write_register(PLCS["intake"].host, 10, int(state.source_level))
     write_register(PLCS["intake"].host, 11, int(state.intake_flow))
-
-    # PLC2 sensors at %MW10-12
     write_register(PLCS["treatment"].host, 10, int(state.treatment_tank_level))
     write_register(PLCS["treatment"].host, 11, int(state.chlorine_level))
     write_register(PLCS["treatment"].host, 12, int(state.ph_level))
-
-    # PLC3 sensors at %MW10-12
     write_register(PLCS["distribution"].host, 10, int(state.distribution_pressure))
     write_register(PLCS["distribution"].host, 11, int(state.outflow_rate))
     write_register(PLCS["distribution"].host, 12, int(state.reservoir_level))

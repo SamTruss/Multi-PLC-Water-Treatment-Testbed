@@ -3,37 +3,73 @@ services:
     container_name: plc1-intake
     image: tuttas/openplc_v3:latest
     restart: unless-stopped
-    ports:
-      - "8081:8080"   # web UI
-      - "5021:502"    # Modbus
-    volumes:
-      - plc1-data:/root/OpenPLC_v3/webserver
+    ports: ["8081:8080", "5021:502"]
+    volumes: [plc1-data:/root/OpenPLC_v3/webserver]
     networks:
-      - ot-net
+      ot-net:
+        ipv4_address: 172.28.10.11
 
   plc2-treatment:
     container_name: plc2-treatment
     image: tuttas/openplc_v3:latest
     restart: unless-stopped
-    ports:
-      - "8082:8080"
-      - "5022:502"
-    volumes:
-      - plc2-data:/root/OpenPLC_v3/webserver
+    ports: ["8082:8080", "5022:502"]
+    volumes: [plc2-data:/root/OpenPLC_v3/webserver]
     networks:
-      - ot-net
+      ot-net:
+        ipv4_address: 172.28.10.12
 
   plc3-distribution:
     container_name: plc3-distribution
     image: tuttas/openplc_v3:latest
     restart: unless-stopped
-    ports:
-      - "8083:8080"
-      - "5023:502"
-    volumes:
-      - plc3-data:/root/OpenPLC_v3/webserver
+    ports: ["8083:8080", "5023:502"]
+    volumes: [plc3-data:/root/OpenPLC_v3/webserver]
     networks:
-      - ot-net
+      ot-net:
+        ipv4_address: 172.28.10.13
+
+  database:
+    container_name: database
+    # Switched from mysql/mysql-server (broken socket handling on Windows
+    # Docker Desktop) to the official mysql image, which Scada-LTS docs
+    # explicitly support.
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: scadalts
+      MYSQL_ROOT_HOST: "%"
+    command:
+      - --log_bin_trust_function_creators=1
+      - --default-authentication-plugin=mysql_native_password
+    volumes:
+      - scadalts-db-data:/var/lib/mysql
+    networks:
+      dmz-net:
+        ipv4_address: 172.28.20.30
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+
+  scadalts:
+    container_name: scadalts
+    image: scadalts/scadalts:latest
+    restart: unless-stopped
+    environment:
+      - CATALINA_OPTS=-Xmx1G -Xms1G
+    ports: ["9090:8080"]
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      dmz-net:
+        ipv4_address: 172.28.20.20
+      ot-net:
+        ipv4_address: 172.28.10.20
 
   agent:
     container_name: agent
@@ -41,19 +77,23 @@ services:
     working_dir: /app
     volumes:
       - ./agent:/app
+      - ./tests:/app/tests
     networks:
-      - ot-net
+      dmz-net:
+        ipv4_address: 172.28.20.10
     command: tail -f /dev/null
-    depends_on:
-      - plc1-intake
-      - plc2-treatment
-      - plc3-distribution
+    depends_on: [plc1-intake, plc2-treatment, plc3-distribution]
 
 networks:
   ot-net:
     driver: bridge
+    ipam: { config: [{ subnet: 172.28.10.0/24 }] }
+  dmz-net:
+    driver: bridge
+    ipam: { config: [{ subnet: 172.28.20.0/24 }] }
 
 volumes:
   plc1-data:
   plc2-data:
   plc3-data:
+  scadalts-db-data:
