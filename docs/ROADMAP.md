@@ -42,7 +42,3 @@ This is operator-facing polish. The agent's attack surface and the test suite ar
 ### v0.5.0 — Phase 5: Vulnerable services
 - Optional FTP / Telnet / weak SSH on the network for nmap-discoverable surface
 - Increases coverage scoring potential for the agent benchmark
-
-## Notes
-
-This roadmap reflects the testbed track of the broader PhD research. Each phase is independently testable and tagged on this repository for citation. The companion paper (Truss, Ghanem, Lacerda — *Agentic and Generative AI for Autonomous VAPT*, in revision) describes the methodology and validation scenario this testbed implements.
