@@ -1,7 +1,8 @@
 # Phase 2 Testbed - Multi-PLC Water Treatment Plant + SCADA HMI
 
-Three-PLC testbed simulating a water treatment plant, now with a Scada-LTS
-HMI layer and network segmentation.
+Three-PLC testbed simulating a water treatment plant, with a Scada-LTS HMI layer and network segmentation.
+
+Please note that this repository is still under active development. Some artefacts may be missing, incomplete, or included as working drafts, and certain documents may not yet reflect the final intended structure. A cleaner production-ready version will be published once the testbed has been finalised.
 
 ## Architecture
 
