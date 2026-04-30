@@ -1,8 +1,7 @@
 # Phase 2 Testbed - Multi-PLC Water Treatment Plant + SCADA HMI
 
 Three-PLC testbed simulating a water treatment plant, now with a Scada-LTS
-HMI layer and network segmentation. Foundation for the agentic VAPT
-validation scenario described in the paper.
+HMI layer and network segmentation.
 
 ## Architecture
 
