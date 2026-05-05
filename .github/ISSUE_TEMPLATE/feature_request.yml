@@ -1,0 +1,110 @@
+name: Feature request
+description: Suggest a new capability, enhancement, or improvement for the Multi-PLC Water Treatment Testbed.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an improvement to the Multi-PLC Water Treatment Testbed.
+
+        **Before submitting:**
+        - Please confirm the proposal is consistent with the project's research scope and ethics statement.
+        - Please search existing issues and discussions to avoid duplicates.
+        - Feature requests are evaluated against research priorities; not every reasonable request will be implemented.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight checks
+      options:
+        - label: This proposal is consistent with the authorised-use and research-ethics commitments of the project.
+          required: true
+        - label: This proposal does not weaken containment, scope control, or safety guidance.
+          required: true
+        - label: This proposal does not make the testbed target real-world systems by default.
+          required: true
+        - label: I have searched existing issues and this is not a duplicate.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What problem does this solve, or what research/operational gap does it address?
+      placeholder: The current testbed has limited process simulation telemetry, which makes it harder to evaluate agent observations...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should change? Be as concrete as you can.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      options:
+        - Docker Compose / container orchestration
+        - Network segmentation
+        - OpenPLC
+        - Scada-LTS
+        - Database
+        - Agent container
+        - Modbus client / scripts
+        - Seeded vulnerabilities
+        - Process simulation
+        - Evaluation harness
+        - Telemetry / logging
+        - Tests
+        - Documentation
+        - Build / packaging / CI
+        - New component
+        - Cross-cutting / unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety and containment considerations
+      description: Could this change affect lab isolation, seeded vulnerabilities, or agent scope?
+      placeholder: This change should remain isolated to docker networks and should not expose services externally...
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you consider, and why did you reject them?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: research-relevance
+    attributes:
+      label: Research relevance
+      description: How does this proposal relate to the project's research goals?
+      options:
+        - Directly enables a planned experiment or evaluation
+        - Improves reproducibility or instrumentation
+        - Improves realism of the OT/ICS simulation
+        - Improves developer experience
+        - Improves safety or containment
+        - Other / unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: References, prior art, related issues, or anything else relevant.
+    validations:
+      required: false
