@@ -1,0 +1,131 @@
+name: Bug report
+description: Report a defect or unexpected behaviour in the Multi-PLC Water Treatment Testbed.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug.
+
+        **Before submitting:**
+        - If this is a security vulnerability, **do not** file a public issue. Follow the process in [`SECURITY.md`](../blob/main/SECURITY.md) instead.
+        - Please search existing issues to avoid duplicates.
+        - Please confirm the bug reproduces against the current `main` branch.
+        - Remember that some insecure behaviour is intentional because this is a deliberately vulnerable research testbed.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight checks
+      options:
+        - label: This is not a security vulnerability or unintended exposure issue.
+          required: true
+        - label: I have searched existing issues and this is not a duplicate.
+          required: true
+        - label: I am running the testbed only in an authorised, lawful, controlled lab environment.
+          required: true
+        - label: I understand that documented seeded vulnerabilities are intentional and should not be reported as ordinary bugs.
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: A clear, concise description of the bug.
+      placeholder: The Scada-LTS container starts, but the HMI is unreachable from the agent container...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      description: Which part of the testbed is affected? Select the closest match.
+      options:
+        - Docker Compose / container orchestration
+        - Network segmentation
+        - OpenPLC
+        - Scada-LTS
+        - Database
+        - Agent container
+        - Modbus client / scripts
+        - Seeded vulnerabilities
+        - Tests
+        - Documentation
+        - Build / packaging / CI
+        - Other / unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Minimal steps to reproduce. Include commands, configuration files, or logs as needed.
+      placeholder: |
+        1. Run `docker compose up -d`
+        2. Run `pytest`
+        3. Observe failure in `tests/test_phase2.py`
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened? Include error messages, stack traces, or relevant log excerpts.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Repository version / commit
+      description: Output of `git rev-parse HEAD`, or release version.
+      placeholder: e.g. 0.2.0-phase2 or commit abc1234
+    validations:
+      required: true
+
+  - type: input
+    id: docker
+    attributes:
+      label: Docker version
+      placeholder: e.g. Docker Desktop 4.x, Docker Engine 26.x
+    validations:
+      required: false
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: e.g. 3.11.7
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: e.g. Ubuntu 24.04, Windows 11 WSL2, macOS 14.5
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else relevant — screenshots, related issues, partial workarounds, hypotheses.
+    validations:
+      required: false
