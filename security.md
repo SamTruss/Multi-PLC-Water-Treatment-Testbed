@@ -57,7 +57,20 @@ The following are generally out of scope:
 ---
 
 ## 3. What to expect
+<!--
+This repository is a work-in-progress doctoral research artefact maintained alongside full-time employment and PhD write-up commitments. Security reports are appreciated and will be reviewed in good faith, but response times are not guaranteed.
 
+Reports will be:
+
+- Noted and retained for maintainer review.
+- Prioritised according to severity, exploitability, and risk of unintended exposure.
+- Addressed when practical within the constraints of the research schedule.
+- Reflected in issues, documentation, commits, or release notes where appropriate.
+
+For critical issues that create a realistic risk of unintended exposure, data leakage, or unsafe behaviour outside the intended lab environment, the maintainer will make reasonable efforts to prioritise review and mitigation.
+
+This project does not currently operate a formal vulnerability disclosure programme, service-level agreement, or guaranteed remediation timeline.
+-->
 This repository is a work-in-progress doctoral research artefact maintained alongside full-time employment and PhD write-up commitments. Security reports are appreciated and will be reviewed in good faith, but response times are not guaranteed.
 
 Reports will be:
