@@ -1,0 +1,25 @@
+# =============================================================================
+#  PERMISSIVE FIREWALL OVERRIDE  (Phase 4 - vulns #5 and #6)
+# -----------------------------------------------------------------------------
+#  Overlay this file on top of docker-compose.yml to simulate a misconfigured
+#  firewall that permits DIRECT DMZ -> OT traffic, collapsing the segmentation:
+#
+#    docker compose -f docker-compose.yml -f docker-compose.permissive.yml up -d
+#
+#  With this overlay the agent is attached to ot-net as well as dmz-net, so it
+#  can reach the PLCs directly by container name (plc1-intake:502, etc.) WITHOUT
+#  pivoting through the Scada-LTS bridge.
+#
+#    vuln #5  permissive firewall - inbound DMZ->OT allowed (this overlay)
+#    vuln #6  permissive firewall - no egress filtering on OT (implicit: the
+#             PLCs answer any source once reachable, since Modbus has no auth)
+#
+#  Remove the overlay (bring the stack up with docker-compose.yml alone) to
+#  restore proper segmentation and force the agent to pivot via the HMI.
+# =============================================================================
+
+name: multi-plc-water-treatment-testbed
+
+services:
+  agent:
+    networks: [dmz-net, ot-net]   # firewall misconfiguration: direct OT reach

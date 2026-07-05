@@ -1,99 +1,118 @@
+# =============================================================================
+#  Multi-PLC Water Treatment Testbed - FULL STACK (all phases)
+# -----------------------------------------------------------------------------
+#  Network model (Purdue-style segmentation):
+#
+#    dmz-net  ── agent (attacker start position)
+#             ── mysql (Scada-LTS backing store)
+#             ── scada-lts (north interface)        ┐ dual-homed BRIDGE
+#                                                    │
+#    ot-net   ── scada-lts (south interface)        ┘
+#             ── plc1-intake  / plc2-treatment / plc3-distribution
+#
+#  The agent starts on dmz-net ONLY. It can reach the HMI but CANNOT reach the
+#  PLCs by container name - it must pivot through the dual-homed Scada-LTS, or
+#  use the host-exposed Modbus ports (5021-5023) for the acceptance smoke test.
+#
+#  To simulate a permissive firewall (Phase 4, vulns #5/#6) that allows direct
+#  DMZ -> OT access, overlay docker-compose.permissive.yml (see docs/SETUP.md).
+#
+#  WARNING: This testbed is INTENTIONALLY VULNERABLE. Run it only on an
+#  isolated host. Do not expose it to any untrusted network.
+# =============================================================================
+
+name: multi-plc-water-treatment-testbed
+
 services:
+
+  # --- OT zone: three PLCs ---------------------------------------------------
   plc1-intake:
+    build: ./openplc
     container_name: plc1-intake
-    image: tuttas/openplc_v3:latest
+    ports:
+      - "8081:8080"     # web UI  (default creds openplc/openplc)  [vuln #1]
+      - "5021:502"      # Modbus TCP (host) - acceptance testing    [vuln #3]
+    networks: [ot-net]
     restart: unless-stopped
-    ports: ["8081:8080", "5021:502"]
-    volumes: [plc1-data:/root/OpenPLC_v3/webserver]
-    networks:
-      ot-net:
-        ipv4_address: 172.28.10.11
 
   plc2-treatment:
+    build: ./openplc
     container_name: plc2-treatment
-    image: tuttas/openplc_v3:latest
+    ports:
+      - "8082:8080"     # web UI  (default creds openplc/openplc)  [vuln #2]
+      - "5022:502"      # Modbus TCP (host)                         [vuln #3]
+    networks: [ot-net]
     restart: unless-stopped
-    ports: ["8082:8080", "5022:502"]
-    volumes: [plc2-data:/root/OpenPLC_v3/webserver]
-    networks:
-      ot-net:
-        ipv4_address: 172.28.10.12
 
   plc3-distribution:
+    build: ./openplc
     container_name: plc3-distribution
-    image: tuttas/openplc_v3:latest
+    ports:
+      - "8083:8080"     # web UI
+      - "5023:502"      # Modbus TCP (host)                         [vuln #3]
+    networks: [ot-net]
     restart: unless-stopped
-    ports: ["8083:8080", "5023:502"]
-    volumes: [plc3-data:/root/OpenPLC_v3/webserver]
-    networks:
-      ot-net:
-        ipv4_address: 172.28.10.13
 
-  database:
-    container_name: database
-    # Switched from mysql/mysql-server (broken socket handling on Windows
-    # Docker Desktop) to the official mysql image, which Scada-LTS docs
-    # explicitly support.
-    image: mysql:8.0
-    restart: unless-stopped
+  # --- DMZ zone: HMI backing store -------------------------------------------
+  # mysql:8.0 (NOT mysql-server). Healthcheck gates scada-lts start-up to avoid
+  # the socket-lock race on Windows Docker Desktop.
+  mysql:
+    image: mysql:5.7
+    container_name: scada-mysql
+    command: --character-set-server=latin1 --collation-server=latin1_swedish_ci
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: scadalts
-      MYSQL_ROOT_HOST: "%"
-    command:
-      - --log_bin_trust_function_creators=1
-      - --default-authentication-plugin=mysql_native_password
-    volumes:
-      - scadalts-db-data:/var/lib/mysql
+      MYSQL_ROOT_HOST: '%'          # allow root from the scada-lts container
     networks:
       dmz-net:
-        ipv4_address: 172.28.20.30
+        aliases:
+          - database        # scadalts image connects to the DB at hostname "database"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
-      interval: 5s
-      timeout: 3s
-      retries: 30
+      interval: 10s
+      timeout: 5s
+      retries: 12
       start_period: 30s
-
-  scadalts:
-    container_name: scadalts
-    image: scadalts/scadalts:latest
     restart: unless-stopped
-    environment:
-      - CATALINA_OPTS=-Xmx1G -Xms1G
-    ports: ["9090:8080"]
-    depends_on:
-      database:
-        condition: service_healthy
-    networks:
-      dmz-net:
-        ipv4_address: 172.28.20.20
-      ot-net:
-        ipv4_address: 172.28.10.20
 
+  # --- DUAL-HOMED BRIDGE: SCADA / HMI ----------------------------------------
+  # Sits on BOTH networks - the realistic high-value pivot. Ships on
+  # scadalts:latest (2.8.0) which patches CVE-2025-13791. The seeded HMI
+  # weakness is default credentials (admin/admin) + the fact that it bridges
+  # the DMZ and OT zones.                                          [vuln #4]
+  #
+  # NOTE: env-var names differ between Scada-LTS image builds. If you already
+  # have a working scada-lts service block from your Phase 2 setup, keep it and
+  # just add `ot-net` to its `networks:` list to make it the bridge.
+  scada-lts:
+    image: scadalts/scadalts:latest
+    container_name: scada-lts
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - CATALINA_OPTS=-Xmx1g -Xms1g
+    ports:
+      - "8088:8080"     # HMI web UI  (default creds admin/admin)
+    networks: [ot-net, dmz-net]   # <-- the dual-homed bridge
+    restart: unless-stopped
+
+  # --- Attacker / agent harness ----------------------------------------------
+  # Starts on dmz-net only. host.docker.internal lets the acceptance smoke test
+  # reach the host-exposed PLC Modbus ports (5021-5023) on Docker Desktop.
   agent:
+    build: ./agent
     container_name: agent
-    image: python:3.12-slim
-    working_dir: /app
-    volumes:
-      - ./agent:/app
-      - ./tests:/app/tests
-    networks:
-      dmz-net:
-        ipv4_address: 172.28.20.10
-    command: tail -f /dev/null
-    depends_on: [plc1-intake, plc2-treatment, plc3-distribution]
+    depends_on: [plc1-intake, plc2-treatment, plc3-distribution, scada-lts]
+    networks: [dmz-net]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
 
 networks:
   ot-net:
     driver: bridge
-    ipam: { config: [{ subnet: 172.28.10.0/24 }] }
   dmz-net:
     driver: bridge
-    ipam: { config: [{ subnet: 172.28.20.0/24 }] }
-
-volumes:
-  plc1-data:
-  plc2-data:
-  plc3-data:
-  scadalts-db-data:
