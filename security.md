@@ -1,5 +1,6 @@
 # Security Policy
 
+<<<<<<< HEAD
 This document covers two distinct concerns:
 
 1. **Vulnerabilities in the Multi-PLC Water Treatment Testbed itself** — bugs in this codebase, configuration, containers, documentation, or supporting scripts that could cause unintended exposure, unsafe behaviour, or data leakage.
@@ -160,3 +161,27 @@ Researchers who report valid vulnerabilities in the Multi-PLC Water Treatment Te
 ---
 
 *Last reviewed: 2026-05-05*
+=======
+This repository is an **intentionally vulnerable** research testbed. The
+vulnerabilities documented in the README and `docs/` are seeded **by design** to
+support evaluation of agentic and generative AI approaches to autonomous VAPT in
+OT/ICS environments.
+
+**Please do not file security reports for the documented, seeded vulnerabilities**
+(default credentials, unauthenticated Modbus, the permissive-firewall overlay,
+the probed CVE). They are the point of the project.
+
+Do report, via a GitHub issue or to the maintainer:
+
+- Unintended security issues outside the seeded set — e.g. a supply-chain risk in
+  the agent container image or a dependency.
+- Anything that could cause the testbed to affect hosts or networks **beyond its
+  own isolated containers**.
+
+## Safe-use expectations
+
+- Run only on an isolated host (VM or air-gapped machine).
+- Never expose the containers' ports to an untrusted network.
+- The testbed simulates a water treatment process entirely in software; it has no
+  connection to, and must never be connected to, real infrastructure.
+>>>>>>> e127948 (Full multi-phase testbed: 3 PLCs, Scada-LTS HMI, dual-net segmentation, agent harness)

@@ -1,21 +1,23 @@
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+.venv/
+venv/
 *.egg-info/
-.pytest_cache/
 
-# IDEs
-.vscode/
-.idea/
+# Env / secrets
+.env
+*.local
+
+# Logs / runtime
+*.log
+agent/.cache/
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Docker volumes (data is in named volumes, not in repo)
-data/
-
-# Local env
-.env
-*.local
+# Editor
+.vscode/
+.idea/
